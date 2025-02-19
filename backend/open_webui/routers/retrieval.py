@@ -3,6 +3,7 @@ import logging
 import mimetypes
 import os
 import shutil
+import time
 
 import uuid
 from datetime import datetime
@@ -792,6 +793,7 @@ def save_docs_to_vector_db(
     add: bool = False,
     user=None,
 ) -> bool:
+    time.sleep(1.0)
     def _get_docs_info(docs: list[Document]) -> str:
         docs_info = set()
 
