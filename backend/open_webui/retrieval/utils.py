@@ -636,11 +636,7 @@ def generate_openai_batch_embeddings(
             json=json_data,
         )
         r.raise_for_status()
-        data = r.json()
-        if "data" in data:
-            return [elem["embedding"] for elem in data["data"]]
-        else:
-            raise "Something went wrong :/"
+        return r
     except Exception as e:
         log.exception(f"Error generating openai batch embeddings: {e}")
         return None
