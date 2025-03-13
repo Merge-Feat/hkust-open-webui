@@ -42,7 +42,6 @@
 	} from '$lib/apis/chats';
 	import { createNewFolder, getFolders, updateFolderParentIdById } from '$lib/apis/folders';
 	import { WEBUI_BASE_URL } from '$lib/constants';
-
 	import ArchivedChatsModal from './Sidebar/ArchivedChatsModal.svelte';
 	import UserMenu from './Sidebar/UserMenu.svelte';
 	import ChatItem from './Sidebar/ChatItem.svelte';
@@ -61,7 +60,6 @@
 	import PencilSquare from '../icons/PencilSquare.svelte';
 	import CreditMenu from './Sidebar/CreditMenu.svelte';
 	import Home from '../icons/Home.svelte';
-
 	const BREAKPOINT = 768;
 
 	let navElement;
@@ -897,13 +895,12 @@
 				</div>
 			</Folder>
 		</div>
-
 		<div class="px-2">
 			<div class="flex flex-col font-primary">
 				{#if $user !== undefined && $user !== null}
 					<CreditMenu>
 						<button
-							class="flex items-center rounded-xl py-4.5 px-3.5 w-full hover:bg-gray-100 dark:hover:bg-gray-900 transition border border-b-0 border-gray-400 dark:border-gray-600"
+							class="flex items-center rounded-xl py-4.5 px-3.5 w-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
 							on:click={() => {
 								showCreditDropdown = !showCreditDropdown;
 							}}
@@ -929,7 +926,7 @@
 						}}
 					>
 						<button
-							class=" flex items-center rounded-xl py-2.5 px-2.5 w-full hover:bg-gray-100 dark:hover:bg-gray-900 transition border border-gray-300 dark:border-gray-700"
+							class=" flex items-center rounded-xl py-2.5 px-2.5 w-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
 							on:click={() => {
 								showDropdown = !showDropdown;
 							}}
