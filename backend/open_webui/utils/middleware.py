@@ -3,9 +3,12 @@ import logging
 import sys
 import os
 import base64
+import httpx
 
 import asyncio
 from aiocache import cached
+from openai import AsyncAzureOpenAI
+
 from typing import Any, Optional
 import random
 import json
@@ -18,7 +21,7 @@ from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 
 
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi import BackgroundTasks
 
 from starlette.responses import Response, StreamingResponse
@@ -83,6 +86,8 @@ from open_webui.config import (
     CACHE_DIR,
     DEFAULT_TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
     DEFAULT_CODE_INTERPRETER_PROMPT,
+    HKUST_OPEN_API_BASE_URL,
+    HKUST_OPEN_API_QUERY,
 )
 from open_webui.env import (
     SRC_LOG_LEVELS,
@@ -817,6 +822,12 @@ async def process_chat_payload(request, form_data, metadata, user, model):
             log.debug(
                 f"With a 0 relevancy threshold for RAG, the context cannot be empty"
             )
+            
+        print("@@@@@@@@@@")
+        print(user)
+        prompt = await translatePrompt(user, prompt)
+        print("@@@@@@@@", prompt)
+        
         
         # Apply Per Model RAG Template if applicable
         custom_rag_template = metadata["model"]["params"].get('rag_template') \
@@ -1973,3 +1984,34 @@ async def process_chat_response(
             headers=dict(response.headers),
             background=response.background,
         )
+
+
+async def translatePrompt(user: Any, prompt: str):
+    # AsyncAzureOpenAI 클라이언트 생성
+    client = AsyncAzureOpenAI(
+        api_key=user.ust_api_key or user.api_key,
+        api_version="2024-10-21",
+        azure_endpoint="https://hkust.azure-api.net"
+    )
+
+    try:
+        # Azure OpenAI API 호출
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",  # 올바른 모델 이름 사용
+            messages=[
+                {"role": "user", "content": f"Translate to English: {prompt}"}
+            ],
+            max_tokens=4096,  # max_completion_tokens 대신 max_tokens 사용
+            stream=False,
+        )
+
+        # 응답에서 번역된 텍스트 추출
+        translated_text = response.choices[0].message.content
+        return translated_text
+
+    except httpx.HTTPStatusError as e:
+        # HTTP 오류 처리
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.json())
+    except Exception as e:
+        # 기타 오류 처리
+        raise HTTPException(status_code=500, detail=str(e))
