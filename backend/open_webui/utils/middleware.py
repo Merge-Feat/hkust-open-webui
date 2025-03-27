@@ -4,6 +4,7 @@ import sys
 import os
 import base64
 import httpx
+import re
 
 import asyncio
 from aiocache import cached
@@ -524,6 +525,8 @@ async def chat_completion_files_handler(
 
     if files := body.get("metadata", {}).get("files", None):
         try:
+            log.info("@@@@@@!!!@!@")
+            log.info(body["messages"])
             queries_response = await generate_queries(
                 request,
                 {
@@ -795,6 +798,11 @@ async def process_chat_payload(request, form_data, metadata, user, model):
                 log.exception(e)
 
     try:
+        # log.info("*************")
+        # if contains_korean(form_data["messages"][-1]['content']):
+        #     form_data["messages"][-1]['content'] = await translatePrompt(user, form_data["messages"][-1]['content'])
+        # log.info("*************")
+        
         form_data, flags = await chat_completion_files_handler(request, form_data, user, metadata)
         sources.extend(flags.get("sources", []))
     except Exception as e:
@@ -823,11 +831,8 @@ async def process_chat_payload(request, form_data, metadata, user, model):
                 f"With a 0 relevancy threshold for RAG, the context cannot be empty"
             )
             
-        print("@@@@@@@@@@")
-        print(user)
-        prompt = await translatePrompt(user, prompt)
-        print("@@@@@@@@", prompt)
-        
+        # log.info("@@@@@@@@@@")
+        # prompt = await translatePrompt(user, prompt)
         
         # Apply Per Model RAG Template if applicable
         custom_rag_template = metadata["model"]["params"].get('rag_template') \
@@ -1990,16 +1995,27 @@ async def translatePrompt(user: Any, prompt: str):
     # AsyncAzureOpenAI 클라이언트 생성
     client = AsyncAzureOpenAI(
         api_key=user.ust_api_key or user.api_key,
-        api_version="2024-10-21",
+        api_version="2025-02-01-preview",
         azure_endpoint="https://hkust.azure-api.net"
     )
+
+    translate_prompt = """
+    [RULE]
+    IF query is NOT in English:
+        Translate to English using Hong Kong-specific terminology (e.g., "No-Home-Base" instead of "homeless").
+        Preserve institutional acronyms (e.g., "HKUST" not "Hong Kong University of Science and Technology").
+    ELSE:
+        Return original query
+    [OUTPUT FORMAT] 
+    Only translated text
+    """
 
     try:
         # Azure OpenAI API 호출
         response = await client.chat.completions.create(
             model="gpt-4o-mini",  # 올바른 모델 이름 사용
             messages=[
-                {"role": "user", "content": f"Translate to English: {prompt}"}
+                {"role": "user", "content": f"{translate_prompt}: {prompt}"}
             ],
             max_tokens=4096,  # max_completion_tokens 대신 max_tokens 사용
             stream=False,
@@ -2007,6 +2023,8 @@ async def translatePrompt(user: Any, prompt: str):
 
         # 응답에서 번역된 텍스트 추출
         translated_text = response.choices[0].message.content
+        log.info("#############")
+        log.info(translated_text)
         return translated_text
 
     except httpx.HTTPStatusError as e:
@@ -2015,3 +2033,8 @@ async def translatePrompt(user: Any, prompt: str):
     except Exception as e:
         # 기타 오류 처리
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def contains_korean(text):
+    # 한글이 포함되어 있는지 확인
+    return bool(re.search("[ㄱ-ㅎ가-힣]", text))
