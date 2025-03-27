@@ -618,7 +618,7 @@ def generate_openai_batch_embeddings(
             json_data[RAG_EMBEDDING_PREFIX_FIELD_NAME] = prefix
 
         r = requests.post(
-            f"{url}/embeddings?api-version=2024-10-21",
+            f"{url}/embeddings?api-version=2025-02-01-preview",
             headers={
                 "Content-Type": "application/json",
                 "api-key": f"{user.ust_api_key}",
