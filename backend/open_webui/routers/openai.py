@@ -680,7 +680,11 @@ async def generate_chat_completion(
 
         r = await session.request(
             method="POST",
+<<<<<<< Updated upstream
             url=f"{url}/chat/completions",
+=======
+            url=f"{url}/chat/completions?api-version=2025-02-01-preview",
+>>>>>>> Stashed changes
             data=payload,
             headers={
                 "Authorization": f"Bearer {key}",

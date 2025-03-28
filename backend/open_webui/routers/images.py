@@ -506,7 +506,11 @@ async def image_generations(
             # Use asyncio.to_thread for the requests.post call
             r = await asyncio.to_thread(
                 requests.post,
+<<<<<<< Updated upstream
                 url=f"{request.app.state.config.IMAGES_OPENAI_API_BASE_URL}/images/generations",
+=======
+                url=f"{request.app.state.config.IMAGES_OPENAI_API_BASE_URL}/images/generations?api-version=2025-02-01-preview",
+>>>>>>> Stashed changes
                 json=data,
                 headers=headers,
             )

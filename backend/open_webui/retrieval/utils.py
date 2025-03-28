@@ -557,7 +557,11 @@ def generate_openai_batch_embeddings(
 ) -> Optional[list[list[float]]]:
     try:
         r = requests.post(
+<<<<<<< Updated upstream
             f"{url}/embeddings",
+=======
+            f"{url}/embeddings?api-version=2025-02-01-preview",
+>>>>>>> Stashed changes
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {key}",
