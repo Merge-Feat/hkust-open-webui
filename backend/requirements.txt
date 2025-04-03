@@ -136,3 +136,5 @@ opentelemetry-instrumentation-logging==0.51b0
 opentelemetry-instrumentation-httpx==0.51b0
 opentelemetry-instrumentation-aiohttp-client==0.51b0
 sentry-sdk==2.23.1
+
+loguru==0.7.3
