@@ -19,14 +19,17 @@ ARG UID=0
 ARG GID=0
 
 ######## WebUI frontend ########
+<<<<<<< HEAD
 # 기존 WebUI Frontend 빌드
 FROM node:22-alpine3.20 AS build
+=======
+FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
+>>>>>>> 050c965fc (update: docker, docker-compose, nginx.conf)
 ARG BUILD_HASH
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm ci
 
 COPY . .
@@ -41,6 +44,7 @@ COPY --from=build /app/build /usr/share/nginx/html
 ######## WebUI backend ########
 FROM python:3.11-slim-bookworm AS base
 
+# Use args
 ARG USE_CUDA
 ARG USE_OLLAMA
 ARG USE_CUDA_VER
@@ -49,7 +53,7 @@ ARG USE_RERANKING_MODEL
 ARG UID
 ARG GID
 
-# 환경 변수 설정
+## Basis ##
 ENV ENV=prod \
     PORT=8080 \
     # pass build args to the build
