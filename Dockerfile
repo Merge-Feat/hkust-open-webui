@@ -19,17 +19,14 @@ ARG UID=0
 ARG GID=0
 
 ######## WebUI frontend ########
-<<<<<<< HEAD
 # 기존 WebUI Frontend 빌드
 FROM node:22-alpine3.20 AS build
-=======
-FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
->>>>>>> 050c965fc (update: docker, docker-compose, nginx.conf)
 ARG BUILD_HASH
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+ENV NODE_OPTIONS=--max_old_space_size=4096
 RUN npm ci
 
 COPY . .
