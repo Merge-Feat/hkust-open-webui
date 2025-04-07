@@ -314,3 +314,5 @@ markdown_wrapper/output_hall_html/*
 markdown_wrapper/output_html/*
 markdown_wrapper/target_html/*
 markdown_wrapper/output_markdown/*
+
+extractor/

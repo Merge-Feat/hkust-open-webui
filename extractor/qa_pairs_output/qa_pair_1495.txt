@@ -1,2 +1,0 @@
-질문: Bill account number가 bank account number 맞나요?
-답변: 아니요.
