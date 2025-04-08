@@ -9,7 +9,7 @@ ARG USE_CUDA_VER=cu121
 # Leaderboard: https://huggingface.co/spaces/mteb/leaderboard 
 # for better performance and multilangauge support use "intfloat/multilingual-e5-large" (~2.5GB) or "intfloat/multilingual-e5-base" (~1.5GB)
 # IMPORTANT: If you change the embedding model (sentence-transformers/all-MiniLM-L6-v2) and vice versa, you aren't able to use RAG Chat with your previous documents loaded in the WebUI! You need to re-embed them.
-ARG USE_EMBEDDING_MODEL="text-embedding-3-small"
+ARG USE_EMBEDDING_MODEL=""
 ARG USE_RERANKING_MODEL=""
 
 # Tiktoken encoding name; models to use can be found at https://huggingface.co/models?library=tiktoken
@@ -103,6 +103,9 @@ RUN if [ $UID -ne 0 ]; then \
 RUN mkdir -p $HOME/.cache/chroma
 RUN echo -n 00000000-0000-0000-0000-000000000000 > $HOME/.cache/chroma/telemetry_user_id
 
+# Create logs directory
+RUN mkdir -p /app/backend/logs
+
 # Make sure the user has access to the app and root directory
 RUN chown -R $UID:$GID /app $HOME
 
@@ -115,6 +118,8 @@ RUN if [ "$USE_OLLAMA" = "true" ]; then \
     apt-get install -y --no-install-recommends ffmpeg libsm6 libxext6 && \
     # install helper tools
     apt-get install -y --no-install-recommends curl jq && \
+    # install dos2unix to fix line ending issues
+    apt-get install -y --no-install-recommends dos2unix && \
     # install ollama
     curl -fsSL https://ollama.com/install.sh | sh && \
     # cleanup
@@ -126,6 +131,8 @@ RUN if [ "$USE_OLLAMA" = "true" ]; then \
     apt-get install -y --no-install-recommends gcc python3-dev && \
     # for RAG OCR
     apt-get install -y --no-install-recommends ffmpeg libsm6 libxext6 && \
+    # install dos2unix to fix line ending issues
+    apt-get install -y --no-install-recommends dos2unix && \
     # cleanup
     rm -rf /var/lib/apt/lists/*; \
     fi
@@ -150,8 +157,6 @@ RUN pip3 install --no-cache-dir uv && \
     fi; \
     chown -R $UID:$GID /app/backend/data/
 
-
-
 # copy embedding weight from build
 # RUN mkdir -p /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2
 # COPY --from=build /app/onnx /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2/onnx
@@ -164,6 +169,15 @@ COPY --chown=$UID:$GID --from=build /app/package.json /app/package.json
 # copy backend files
 COPY --chown=$UID:$GID ./backend .
 
+# Fix line endings and set execute permissions for shell scripts
+# dos2unix 설치 및 실행 (Debian/Ubuntu 기반 이미지 예시)
+RUN dos2unix /app/backend/dev.sh && \
+    dos2unix /app/backend/start.sh && \
+    echo "✅ dos2unix done" && \
+    chmod +x /app/backend/dev.sh /app/backend/start.sh && \
+    echo "✅ chmod done" && \
+    ls -l /app/backend/dev.sh /app/backend/start.sh
+
 EXPOSE 8080
 
 HEALTHCHECK CMD curl --silent --fail http://localhost:${PORT:-8080}/health | jq -ne 'input.status == true' || exit 1
@@ -174,4 +188,4 @@ ARG BUILD_HASH
 ENV WEBUI_BUILD_VERSION=${BUILD_HASH}
 ENV DOCKER=true
 
-CMD [ "bash", "start.sh"]
+CMD ["/bin/bash", "-c", "cd /app/backend && if [ \"${ENV}\" = \"dev\" ]; then /bin/bash /app/backend/dev.sh --reset; else /bin/bash /app/backend/start.sh; fi"]

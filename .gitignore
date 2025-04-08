@@ -316,3 +316,4 @@ markdown_wrapper/target_html/*
 markdown_wrapper/output_markdown/*
 
 extractor/
+.qodo
