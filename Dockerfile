@@ -2,13 +2,12 @@
 # Initialize device type args
 # use build args in the docker build command with --build-arg="BUILDARG=true"
 ARG USE_CUDA=false
+# Set Ollama to false since it's not being used
 ARG USE_OLLAMA=false
 # Tested with cu117 for CUDA 11 and cu121 for CUDA 12 (default)
 ARG USE_CUDA_VER=cu121
 # any sentence transformer model; models to use can be found at https://huggingface.co/models?library=sentence-transformers
 # Leaderboard: https://huggingface.co/spaces/mteb/leaderboard 
-# for better performance and multilangauge support use "intfloat/multilingual-e5-large" (~2.5GB) or "intfloat/multilingual-e5-base" (~1.5GB)
-# IMPORTANT: If you change the embedding model (sentence-transformers/all-MiniLM-L6-v2) and vice versa, you aren't able to use RAG Chat with your previous documents loaded in the WebUI! You need to re-embed them.
 ARG USE_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 ARG USE_RERANKING_MODEL=""
 
@@ -21,17 +20,23 @@ ARG UID=0
 ARG GID=0
 
 ######## WebUI frontend ########
-FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
+FROM node:22-alpine3.20 AS build
 ARG BUILD_HASH
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+ENV NODE_OPTIONS=--max_old_space_size=4096
 RUN npm ci
 
 COPY . .
 ENV APP_BUILD_HASH=${BUILD_HASH}
 RUN npm run build
+
+######## Nginx setup ########
+FROM nginx:stable-alpine AS nginx
+COPY ./nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build /usr/share/nginx/html
 
 ######## WebUI backend ########
 FROM python:3.11-slim-bookworm AS base
@@ -56,8 +61,7 @@ ENV ENV=prod \
     USE_RERANKING_MODEL_DOCKER=${USE_RERANKING_MODEL}
 
 ## Basis URL Config ##
-ENV OLLAMA_BASE_URL="/ollama" \
-    OPENAI_API_BASE_URL=""
+ENV OPENAI_API_BASE_URL=""
 
 ## API Key and Security Config ##
 ENV OPENAI_API_KEY="" \
@@ -105,34 +109,20 @@ RUN echo -n 00000000-0000-0000-0000-000000000000 > $HOME/.cache/chroma/telemetry
 # Make sure the user has access to the app and root directory
 RUN chown -R $UID:$GID /app $HOME
 
-RUN if [ "$USE_OLLAMA" = "true" ]; then \
-    apt-get update && \
-    # Install pandoc and netcat
-    apt-get install -y --no-install-recommends git build-essential pandoc netcat-openbsd curl && \
-    apt-get install -y --no-install-recommends gcc python3-dev && \
-    # for RAG OCR
-    apt-get install -y --no-install-recommends ffmpeg libsm6 libxext6 && \
-    # install helper tools
-    apt-get install -y --no-install-recommends curl jq && \
-    # install ollama
-    curl -fsSL https://ollama.com/install.sh | sh && \
-    # cleanup
-    rm -rf /var/lib/apt/lists/*; \
-    else \
-    apt-get update && \
+# Install dependencies without Ollama
+RUN apt-get update && \
     # Install pandoc, netcat and gcc
     apt-get install -y --no-install-recommends git build-essential pandoc gcc netcat-openbsd curl jq && \
     apt-get install -y --no-install-recommends gcc python3-dev && \
     # for RAG OCR
     apt-get install -y --no-install-recommends ffmpeg libsm6 libxext6 && \
     # cleanup
-    rm -rf /var/lib/apt/lists/*; \
-    fi
+    rm -rf /var/lib/apt/lists/*
 
 # install python dependencies
 COPY --chown=$UID:$GID ./backend/requirements.txt ./requirements.txt
 
-RUN pip3 install uv && \
+RUN pip3 install --no-cache-dir uv && \
     if [ "$USE_CUDA" = "true" ]; then \
     # If you use CUDA the whisper and embedding model will be downloaded on first use
     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/$USE_CUDA_DOCKER_VER --no-cache-dir && \
@@ -148,12 +138,6 @@ RUN pip3 install uv && \
     python -c "import os; import tiktoken; tiktoken.get_encoding(os.environ['TIKTOKEN_ENCODING_NAME'])"; \
     fi; \
     chown -R $UID:$GID /app/backend/data/
-
-
-
-# copy embedding weight from build
-# RUN mkdir -p /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2
-# COPY --from=build /app/onnx /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2/onnx
 
 # copy built frontend files
 COPY --chown=$UID:$GID --from=build /app/build /app/build
