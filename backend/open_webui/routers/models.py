@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from open_webui.utils.auth import get_admin_user, get_verified_user
 from open_webui.utils.access_control import has_access, has_permission
-
+#from ..main import get_app_state
 
 router = APIRouter()
 
@@ -68,6 +68,10 @@ async def create_new_model(
         )
 
     else:
+        # Insert Model Description Embedding If There Is Change
+        if form_data.meta.description != None:
+            form_data.meta.description_embedding = request.app.state.EMBEDDING_FUNCTION(query=form_data.meta.description, user=user)
+
         model = Models.insert_new_model(form_data, user.id)
         if model:
             return model
@@ -143,6 +147,7 @@ async def toggle_model_by_id(id: str, user=Depends(get_verified_user)):
 
 @router.post("/model/update", response_model=Optional[ModelModel])
 async def update_model_by_id(
+    request: Request,
     id: str,
     form_data: ModelForm,
     user=Depends(get_verified_user),
@@ -164,6 +169,10 @@ async def update_model_by_id(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
         )
+    
+    # Insert Model Description Embedding If There Is Change
+    if form_data.meta.description != None and model.meta.description != form_data.meta.description:
+        form_data.meta.description_embedding = request.app.state.EMBEDDING_FUNCTION(query=form_data.meta.description, user=user)
 
     model = Models.update_model_by_id(id, form_data)
     return model

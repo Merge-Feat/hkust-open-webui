@@ -62,6 +62,7 @@
 		name: '',
 		meta: {
 			profile_image_url: '/static/favicon.png',
+			auto_model_select: false,
 			description: '',
 			suggestion_prompts: null,
 			tags: []
@@ -126,6 +127,7 @@
 		} else {
 			info.meta.description = null;
 		}
+		info.meta.auto_model_select = info.meta.auto_model_select;
 
 		if (knowledge.length > 0) {
 			info.meta.knowledge = knowledge;
@@ -511,6 +513,13 @@
 								bind:value={info.meta.description}
 							/>
 						{/if}
+					</div>
+
+					<div class='my-1'>
+						<label>
+							<div class=" self-center text-sm font-semibold">{$i18n.t('Model Auto Selection')}</div>
+							<input type="checkbox" bind:checked={info.meta.model_auto_select} />
+						</label>
 					</div>
 
 					<div class=" mt-2 my-1">

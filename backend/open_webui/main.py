@@ -8,6 +8,7 @@ import shutil
 import sys
 import time
 import random
+import numpy as np
 
 from contextlib import asynccontextmanager
 from urllib.parse import urlencode, parse_qs, urlparse
@@ -19,6 +20,7 @@ from aiocache import cached
 import aiohttp
 import requests
 
+from open_webui.utils.misc import get_last_user_message
 
 from fastapi import (
     Depends,
@@ -418,6 +420,9 @@ app = FastAPI(
     redoc_url=None,
     lifespan=lifespan,
 )
+
+def get_app_state():
+    return app.state
 
 oauth_manager = OAuthManager(app)
 
@@ -1035,7 +1040,6 @@ async def get_base_models(request: Request, user=Depends(get_admin_user)):
     models = await get_all_base_models(request)
     return {"data": models}
 
-
 @app.post("/api/chat/completions")
 async def chat_completion(
     request: Request,
@@ -1069,6 +1073,40 @@ async def chat_completion(
 
             request.state.direct = True
             request.state.model = model
+        
+        auto_select = model_info.meta.model_auto_select
+        log.info(auto_select)
+        def cosine_similarity(a: np.ndarray, b: np.ndarray):
+            a = np.asarray(a)
+            b = np.asarray(b)
+            similarity = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+            return similarity
+
+        if auto_select:
+            max_similarity = -9999999.0
+            query = get_last_user_message(form_data["messages"])
+            query_embedding = request.app.state.EMBEDDING_FUNCTION(query=query, user=user)
+            log.info(f"QUERY EMBEDDING: {len(query_embedding)}")
+            log.info(len(Models.get_all_models()))
+            for candidate in Models.get_all_models():
+                embedding = candidate.meta.description_embedding
+                knowledge = request.app.state.MODELS[candidate.id].get("info", {}).get("meta", {}).get("knowledge", False)
+                if embedding and knowledge:
+                    log.info(f"CND EMB: {len(embedding)}")
+                #if not (candidate.get("info", {}).get("meta", {}).get("knowledge", False) or embedding):
+                #    continue
+                    similarity = cosine_similarity(query_embedding, embedding)
+                    if similarity > max_similarity:
+                        log.info("Change Occured")
+                        max_similarity = similarity
+                        final_model = candidate
+            model = request.app.state.MODELS[final_model.id]
+            model_info = final_model
+            #request.state.direct = True
+            request.state.model = request.app.state.MODELS[final_model.id]
+            request.state.model_info = final_model
+            log.info(model)
+
 
         metadata = {
             "user_id": user.id,

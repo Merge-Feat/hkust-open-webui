@@ -37,10 +37,15 @@ class ModelParams(BaseModel):
 class ModelMeta(BaseModel):
     profile_image_url: Optional[str] = "/static/favicon.png"
 
+    # Add model auto select feature meta
+    model_auto_select: Optional[bool] = False
+
     description: Optional[str] = None
     """
         User-facing description of the model.
     """
+    # Add description embedding to the model meta
+    description_embedding: Optional[list[float]] = None
 
     capabilities: Optional[dict] = None
 
