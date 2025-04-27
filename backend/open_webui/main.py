@@ -1074,38 +1074,43 @@ async def chat_completion(
             request.state.direct = True
             request.state.model = model
         
+        
+        # [Function] Compute cosine similarities between a query vector and multiple candidate vectors in batch.
+        # [Author] rbtree
+        def cosine_similarity_batch(query: np.ndarray, candidates: np.ndarray) -> np.ndarray:
+            query_norm = np.linalg.norm(query)
+            candidates_norm = np.linalg.norm(candidates, axis=1)
+            
+            # (N,) = (N, D) @ (D,)
+            dot_products = candidates @ query
+            
+            similarities = dot_products / (candidates_norm * query_norm + 1e-10) # Prevents div by zero error
+            return similarities
+        
+        # [Function] Select the best model based on cosine similarity between the user query and model descriptions.
+        # [Author] rbtree
         auto_select = model_info.meta.model_auto_select
-        log.info(auto_select)
-        def cosine_similarity(a: np.ndarray, b: np.ndarray):
-            a = np.asarray(a)
-            b = np.asarray(b)
-            similarity = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-            return similarity
-
         if auto_select:
-            max_similarity = -9999999.0
             query = get_last_user_message(form_data["messages"])
-            query_embedding = request.app.state.EMBEDDING_FUNCTION(query=query, user=user)
-            log.info(f"QUERY EMBEDDING: {len(query_embedding)}")
-            log.info(len(Models.get_all_models()))
-            for candidate in Models.get_all_models():
-                embedding = candidate.meta.description_embedding
-                knowledge = request.app.state.MODELS[candidate.id].get("info", {}).get("meta", {}).get("knowledge", False)
-                if embedding and knowledge:
-                    log.info(f"CND EMB: {len(embedding)}")
-                #if not (candidate.get("info", {}).get("meta", {}).get("knowledge", False) or embedding):
-                #    continue
-                    similarity = cosine_similarity(query_embedding, embedding)
-                    if similarity > max_similarity:
-                        log.info("Change Occured")
-                        max_similarity = similarity
-                        final_model = candidate
-            model = request.app.state.MODELS[final_model.id]
-            model_info = final_model
-            #request.state.direct = True
-            request.state.model = request.app.state.MODELS[final_model.id]
-            request.state.model_info = final_model
-            log.info(model)
+            query_embedding = np.asarray(request.app.state.EMBEDDING_FUNCTION(query=query, user=user))
+
+            candidates = [
+                candidate for candidate in Models.get_all_models()
+                if candidate.meta.description_embedding and 
+                request.app.state.MODELS[candidate.id].get("info", {}).get("meta", {}).get("knowledge", False)
+            ]
+
+            if candidates:
+                embeddings = np.array([candidate.meta.description_embedding for candidate in candidates])
+
+                similarities = cosine_similarity_batch(query_embedding, embeddings)
+                best_idx = np.argmax(similarities)
+                final_model_info = candidates[best_idx]
+
+                model = request.app.state.MODELS[final_model_info.id]
+                model_info = final_model_info
+                request.state.model = model
+                request.state.model_info = model_info
 
 
         metadata = {
