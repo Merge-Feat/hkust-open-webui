@@ -132,7 +132,7 @@
 	}
 </script>
 
-<div class="dark:text-white">
+<div class="dark:text-white w-full">
 	<div class="flex items-center justify-between dark:text-gray-100 mb-2">
 		<div class="text-lg font-medium self-center font-primary">{$i18n.t("How to use HKUST Open WebUI")}</div>
 		<button
@@ -145,7 +145,7 @@
 		</button>
 	</div>
 
-    <div class="px-4 py-4 min-w-[600px] bg-white dark:shadow-lg dark:bg-gray-850 border border-gray-100 dark:border-gray-850 rounded-xl">
+    <div class="px-4 py-4 w-full bg-white dark:shadow-lg dark:bg-gray-850 border border-gray-100 dark:border-gray-850 rounded-xl">
         <!-- 탭 네비게이션 -->
         <div class="flex border-b border-gray-200 dark:border-gray-700 mb-4">
             {#each tabs as tab}
