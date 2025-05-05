@@ -926,13 +926,36 @@ async def generate_chat_completion_with_prelude(
                     "several established facts are presented.",
                     "the summary is as follows.",
                 ]
+                
+                # Korean prelude messages
+                korean_preludes = [
+                    "요청하신 {query}에 대한 답변을 준비하기 위해 자료 창고 깊숙한 곳에서 찾고 있어요! 잠시만 기다려주시면 금방 가져올게요!",
+                    "좋은 질문 감사합니다! {query} 관련 정보를 찾느라 자료 더미 속에서 탐험 중이에요. 잠시 후 찾아뵐께요!",
+                    "잠시만 기다려주세요! {query} 관련 데이터를 분석하고, 최적의 답변을 준비하고 있습니다. 금방 준비해드릴게요!",
+                    "흥미로운 질문이네요! 지금 지식 도서관에서 관련 자료를 하나씩 꺼내 정리하고 있어요, 잠시만요!",
+                    "질문하신 {query}에 대해 완벽한 답변을 작성하고 있어요. 커피 한 잔 마시고 계세요!",
+                    "{query}에 대해 궁금하신거죠? 지금 서류 담당 팀과 연락하고 있어요. 곧 답변과 함께 돌아올게요!"
+                ]
+
+                def is_korean(text):
+                    """Simple check if text contains Korean characters"""
+                    korean_range = range(ord('가'), ord('힣') + 1)
+                    for char in text:
+                        if ord(char) in korean_range:
+                            return True
+                    return False
 
                 def generate_kb_prelude(query: str) -> str:
-                    access = random.choice(access_phrases)
-                    link = random.choice(query_links).format(query=query)
-                    verb = random.choice(retrieval_verbs)
-                    output = random.choice(output_phrases)
-                    return f'*{access} {link} {verb}, {output}*\n\n'
+                    # Check if query is in Korean
+                    if is_korean(query):
+                        prelude = random.choice(korean_preludes).format(query=query)
+                        return f'*{prelude}*\n\n'
+                    else:
+                        access = random.choice(access_phrases)
+                        link = random.choice(query_links).format(query=query)
+                        verb = random.choice(retrieval_verbs)
+                        output = random.choice(output_phrases)
+                        return f'*{access} {link} {verb}, {output}*\n\n'
                 
                 prelude = generate_kb_prelude(query)
 

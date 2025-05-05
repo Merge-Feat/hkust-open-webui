@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { createEventDispatcher, getContext, tick } from 'svelte';
 	const dispatch = createEventDispatcher();
-	const i18n = getContext('i18n');
+	const i18n: any = getContext('i18n');
 
 	import XMark from '$lib/components/icons/XMark.svelte';
+	import { getLanguages } from '$lib/i18n';
+	import { onMount } from 'svelte';
 	
 	export let selectedModel: string = 'Shrl';
 	
@@ -14,8 +16,15 @@
 	const tabs = [
 		{ id: 0, title: 'Usage', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
 		{ id: 1, title: 'Model Selection', icon: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z' },
-		{ id: 2, title: 'Advanced', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' }
+		// { id: 2, title: 'Advanced', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
+		{ id: 2, title: 'Language', icon: 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' }
 	];
+	
+	type TabItem = {
+		title: any;
+		description: any;
+		type?: string;
+	};
 	
 	// 탭 내용
 	const tabContents = [
@@ -23,32 +32,32 @@
 			title: 'Usage',
 			content: [
 				{
-					title: $i18n?.t('1. Select a Model'),
-					description: $i18n?.t('Choose a suitable model from the model list in the top left corner.')
+					title: $i18n.t('1. Select a Model'),
+					description: $i18n.t('Choose a suitable model from the model list in the top left corner.')
 				},
 				{
-					title: $i18n?.t('2. Check Question Guide'),
-					description: $i18n?.t('You can check what questions you can ask for each model in the "Model Selection" menu in the right tab.')
+					title: $i18n.t('2. Check Question Guide'),
+					description: $i18n.t('You can check what questions you can ask for each model in the "Model Selection" menu in the right tab.')
 				},
 				{
-					title: $i18n?.t('3. Fact-based Answers & Sources'),
-					description: $i18n?.t('Answers are provided based on official documents, and you can check the original text through the source link at the bottom.')
+					title: $i18n.t('3. Fact-based Answers & Sources'),
+					description: $i18n.t('Answers are provided based on official documents, and you can check the original text through the source link at the bottom.')
 				},
                 {
-					title: $i18n?.t('4. OpenAI Models Available'),
-					description: $i18n?.t('In addition to official document-based models, you can also use GPT-4o-mini and GPT-4o models provided by OpenAI.')
+					title: $i18n.t('4. OpenAI Models Available'),
+					description: $i18n.t('In addition to official document-based models, you can also use GPT-4o-mini and GPT-4o models provided by OpenAI.')
 				},
                 {
-					title: $i18n?.t('5. Multiple Model Selection'),
-					description: $i18n?.t('You can select multiple models to ask questions simultaneously.')
+					title: $i18n.t('5. Multiple Model Selection'),
+					description: $i18n.t('You can select multiple models to ask questions simultaneously.')
 				},
                 {
-					title: $i18n?.t('6. Credit Information'),
-					description: $i18n?.t('The Credit required for model use is provided by the school through 8 HKD worth of API per month and is reset at the beginning of each month. The official document-based model consumes about 0.005 HKD per question on average.')
+					title: $i18n.t('6. Credit Information'),
+					description: $i18n.t('The Credit required for model use is provided by the school through 8 HKD worth of API per month and is reset at the beginning of each month. The official document-based model consumes about 0.005 HKD per question on average.')
 				},
                 {
-					title: $i18n?.t('7. Tips for Better Answers'),
-					description: $i18n?.t('While it is proficient in Korean questions, you can get more accurate answers by asking in English.')
+					title: $i18n.t('7. Tips for Better Answers'),
+					description: $i18n.t('While it is proficient in Korean questions, you can get more accurate answers by asking in English.')
 				}
 			]
 		},
@@ -56,50 +65,76 @@
 			title: 'Model Selection',
 			content: [
 				{
-					title: $i18n?.t('GPT-4o-mini & GPT-4o'),
-					description: $i18n?.t('These are the same models provided by OpenAI.')
+					title: $i18n.t('GPT-4o-mini & GPT-4o'),
+					description: $i18n.t('These are the same models provided by OpenAI.')
 				},
 				{
-					title: $i18n?.t('Student Housing and Residential Life'),
-					description: $i18n?.t('This model is based on documents from (shrl.hkust.edu.hk). It is suitable for questions about housing (application, hall points, housing regulations, check-in-check-out, shuttle bus, Off-campus, etc.).')
+					title: $i18n.t('Student Housing and Residential Life'),
+					description: $i18n.t('This model is based on documents from (shrl.hkust.edu.hk). It is suitable for questions about housing (application, hall points, housing regulations, check-in-check-out, shuttle bus, Off-campus, etc.).')
 				},
 				{
-					title: $i18n?.t('Academic Registry Office'),
-					description: $i18n?.t('This model is based on documents from (registry.hkust.edu.hk). It is suitable for questions about leave of absence, credit regulations, study extension, credit transfer, transcript inquiries, SIS, and other academic support.')
+					title: $i18n.t('Academic Registry Office'),
+					description: $i18n.t('This model is based on documents from (registry.hkust.edu.hk). It is suitable for questions about leave of absence, credit regulations, study extension, credit transfer, transcript inquiries, SIS, and other academic support.')
 				},
 				{
-					title: $i18n?.t('Campus Services Office & Dean\'s Office & Campus Management Office'),
-					description: $i18n?.t('This model is based on documents from (cso.hkust.edu.hk, dst.hkust.edu.hk, cmo.hkust.edu.hk). It is suitable for questions about campus facilities, campus activities, transportation, and other student support.')
+					title: $i18n.t('Campus Services Office & Dean\'s Office & Campus Management Office'),
+					description: $i18n.t('This model is based on documents from (cso.hkust.edu.hk, dst.hkust.edu.hk, cmo.hkust.edu.hk). It is suitable for questions about campus facilities, campus activities, transportation, and other student support.')
 				},
 				{
-					title: $i18n?.t('IT Services Office'),
-					description: $i18n?.t('This model is based on documents from (itso.hkust.edu.hk). It is suitable for questions about VPN setup, printer usage, 2FA authentication, and other school IT services.')
+					title: $i18n.t('IT Services Office'),
+					description: $i18n.t('This model is based on documents from (itso.hkust.edu.hk). It is suitable for questions about VPN setup, printer usage, 2FA authentication, and other school IT services.')
 				},
 				{
-					title: $i18n?.t('Undergraduate Research Opportunities Program'),
-					description: $i18n?.t('This model is based on documents from (urop.hkust.edu.hk). It is suitable for questions about UROP applications, previous project inquiries, and related matters.')
+					title: $i18n.t('Undergraduate Research Opportunities Program'),
+					description: $i18n.t('This model is based on documents from (urop.hkust.edu.hk). It is suitable for questions about UROP applications, previous project inquiries, and related matters.')
 				},
                 {
-					title: $i18n?.t('Study Abroad'),
-					description: $i18n?.t('This model is based on documents from (studyabroad.hkust.edu.hk, summercampus.hkust.edu.hk). It is suitable for questions about study abroad applications and related matters.')
+					title: $i18n.t('Study Abroad'),
+					description: $i18n.t('This model is based on documents from (studyabroad.hkust.edu.hk, summercampus.hkust.edu.hk). It is suitable for questions about study abroad applications and related matters.')
 				},
 			]
 		},
+		// {
+		// 	title: 'Advanced',
+		// 	content: [
+		// 		{
+		// 			title: $i18n.t('System Prompt'),
+		// 			description: $i18n.t('You can adjust the model\'s behavior and response method using the system prompt.')
+		// 		}
+		// 	]
+		// },
 		{
-			title: 'Advanced',
+			title: 'Language',
 			content: [
 				{
-					title: $i18n?.t('System Prompt'),
-					description: $i18n?.t('You can adjust the model\'s behavior and response method using the system prompt.')
+					title: $i18n.t('Language Selection'),
+					description: $i18n.t('You can choose your preferred language from the options below.'),
+					type: 'language_selector'
 				}
 			]
 		}
 	];
+	
+	// Language data
+	type Language = { code: string; title: string };
+	let languages: Language[] = [];
+	let selectedLanguage = $i18n.language;
+	
+	onMount(async () => {
+		languages = await getLanguages();
+	});
+	
+	// Handle language change
+	function changeLanguage(event: Event) {
+		const newLang = (event.target as HTMLSelectElement).value;
+		$i18n.changeLanguage(newLang);
+		selectedLanguage = newLang;
+	}
 </script>
 
 <div class="dark:text-white">
 	<div class="flex items-center justify-between dark:text-gray-100 mb-2">
-		<div class="text-lg font-medium self-center font-primary">{$i18n?.t("How to use HKUST Open WebUI")}</div>
+		<div class="text-lg font-medium self-center font-primary">{$i18n.t("How to use HKUST Open WebUI")}</div>
 		<button
 			class="self-center"
 			on:click={() => {
@@ -110,7 +145,7 @@
 		</button>
 	</div>
 
-    <div class="px-4 py-4 bg-white dark:shadow-lg dark:bg-gray-850 border border-gray-100 dark:border-gray-850 rounded-xl">
+    <div class="px-4 py-4 min-w-[600px] bg-white dark:shadow-lg dark:bg-gray-850 border border-gray-100 dark:border-gray-850 rounded-xl">
         <!-- 탭 네비게이션 -->
         <div class="flex border-b border-gray-200 dark:border-gray-700 mb-4">
             {#each tabs as tab}
@@ -121,7 +156,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={tab.icon} />
                     </svg>
-                    {$i18n?.t(tab.title)}
+                    {$i18n.t(tab.title)}
                 </button>
             {/each}
         </div>
@@ -132,6 +167,20 @@
                 <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <h3 class="font-medium mb-2">{item.title}</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
+                    
+                    {#if item.type === 'language_selector' && languages.length > 0}
+                        <div class="mt-4">
+                            <select
+                                class="w-full p-2 text-sm rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                                bind:value={selectedLanguage}
+                                on:change={changeLanguage}
+                            >
+                                {#each languages as language}
+                                    <option value={language.code}>{language.title}</option>
+                                {/each}
+                            </select>
+                        </div>
+                    {/if}
                 </div>
             {/each}
         </div>
